@@ -1,6 +1,6 @@
 _Title:_ Effects of single and combined exposure to artificial light at night and an insecticide on a leaf beetle
 
-_Authors:_ Sandra Regina Lang, ORabea Schweiger, Caroline Müller
+_Authors:_ Sandra Regina Lang, Rabea Schweiger, Caroline Müller
 
 _Abstract:_
 
