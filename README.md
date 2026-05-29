@@ -1,8 +1,8 @@
 _Title:_ Effects of single and combined exposure to artificial light at night and an insecticide on a leaf beetle
 
 _Authors:_ Sandra Regina Lang, ORabea Schweiger, Caroline Müller
-_
-Abstract:_
+
+_Abstract:_
 
  Although multiple environmental stressors often co-occur and interact in complex
 ways, most research to date has focused on the effects of single stressors on
