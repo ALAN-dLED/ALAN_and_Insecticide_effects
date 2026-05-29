@@ -1,0 +1,2828 @@
+# packages
+
+```{r}
+library(readxl)
+library(sandwich)
+library(car)
+library(carData)
+library(sp)
+library(emmeans)
+library(Matrix)
+library(lme4)
+library(DHARMa)
+library(nlme)
+library(glmmTMB)
+library(ggplot2)
+library(gstat)
+library(ggpattern)
+library(ggpubr)
+library(ggthemes)
+library(ggnewscale)
+library(ggsignif)
+library(multcomp)
+library(multcompView)
+library(emmeans)
+library(AER)
+library(MASS)
+#library(jtools)
+#library(interactions)
+library(performance)
+library(see)
+library(nlme)
+library(sjPlot)
+library(tidyverse)
+#library(broom.mixed)
+library(dplyr)
+library(vegan)
+library(survival)
+library(survminer)
+
+```
+
+
+# data in
+
+```{r}
+all <- read_excel("C:/Users/slang24/sciebo/Dissertation ab Jan 2023/Experiments/2025_1-2_ALAN_GCH with Jan Bozorovic/Master.xlsx", 
+    na = "na")
+#View(all)
+
+```
+
+# subsets
+```{r}
+all_pairs <- subset (all, sex == "f" & pair_ID != "na")
+all_f <- subset (all, sex == "f")
+all_m <- subset (all, sex == "m")
+
+all_dev <- subset (all, a == "1")
+```
+
+# font
+
+```{r}
+windowsFonts(A = windowsFont("Arial"))
+windowsFonts(B = windowsFont("Time News Roman"))
+```
+
+# define data type
+
+```{r}
+all_pairs$egg_no._corrected <- as.numeric(all_pairs$egg_no._corrected)
+all_pairs$treatment <- as.character(all_pairs$treatment)
+
+all$treatment <- as.factor(all$treatment)
+all$sex <- as.factor(all$sex)
+
+all$ALAN <- as.factor(all$ALAN)
+all$Cooper <- as.factor(all$Cooper)
+
+all_f$treatment <- as.factor(all_f$treatment)
+all_f$sex <- as.factor(all_f$sex)
+
+all_f$ALAN <- as.factor(all_f$ALAN)
+all_f$Cooper <- as.factor(all_f$Cooper)
+
+all_m$treatment <- as.factor(all_m$treatment)
+all_m$sex <- as.factor(all_m$sex)
+
+all_m$ALAN <- as.factor(all_m$ALAN)
+all_m$Cooper <- as.factor(all_m$Cooper)
+
+all_pairs$treatment <- as.factor(all_pairs$treatment)
+all_pairs$sex <- as.factor(all_pairs$sex)
+
+all_pairs$ALAN <- as.factor(all_pairs$ALAN)
+all_pairs$Cooper <- as.factor(all_pairs$Cooper)
+
+all_f$box_nr <- as.numeric(all_f$box_nr)
+all_m$box_nr <- as.numeric(all_m$box_nr)
+all$box_nr <- as.numeric(all$box_nr)
+```
+
+#reorder levels and define data type
+```{r}
+all <- all %>%
+  mutate(treatment = factor(treatment, levels = c("C", "A", "I", "M")))
+
+all_f <- all_f %>%
+  mutate(treatment = factor(treatment, levels = c("C", "A", "I", "M")))
+
+all_m <- all_m %>%
+  mutate(treatment = factor(treatment, levels = c("C", "A", "I", "M")))
+```
+
+
+
+#helpful code
+
+```{r}
+sum(is.na(all$sex)) #How many nas in this variable? 
+```
+```{r}
+length(unique(all_f$box_nr))  #How many levels does box have? 
+table(all_f$box_nr) #How many observations per box?
+```
+
+
+#++++++distribution of raw data for family++++++ 
+
+####--F0 DEVTIME ADULT
+
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all$devtime_adult
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Devtime until adult eclosion", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all, qqPlot(devtime_adult)))
+
+print(shapiro.test(all$devtime_adult))
+```
+##--F0 LARVAL MASS
+
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all$mass_l
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Female larval mass day 5", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all, qqPlot(mass_l)))
+
+print(shapiro.test(all$mass_l))
+```
+##--F0 DELTA PUPAL-LARVAL MASS
+###_____FM
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all$delta_lp
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Delta pupal vs larval mass", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all, qqPlot(delta_lp)))
+
+print(shapiro.test(all$delta_lp))
+```
+###_____FEMALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_f$delta_lp
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Female delta pupal vs larval mass", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_f, qqPlot(delta_lp)))
+
+print(shapiro.test(all_f$delta_lp))
+```
+
+###_____MALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_m$delta_lp
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Male delta pupal vs larval mass", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_m, qqPlot(delta_lp)))
+
+print(shapiro.test(all_m$delta_lp))
+```
+
+##--F0 ADULT MASS
+
+###_____FM
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all$mass_a
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Adult mass", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all, qqPlot(mass_a)))
+
+print(shapiro.test(all$mass_a))
+```
+###_____FEMALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_f$mass_a
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Female adult mass", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_f, qqPlot(mass_a)))
+
+print(shapiro.test(all_f$mass_a))
+```
+###_____MALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_m$mass_a
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Male adult mass", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_m, qqPlot(mass_a)))
+
+print(shapiro.test(all_m$mass_a))
+```
+##--F0 FOOD-PRE INSECTICIDE TREATMENT
+##_____FM
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all$sum_pre
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Leaf consumption pre insecticide treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all, qqPlot(sum_pre)))
+
+print(shapiro.test(all$sum_pre))
+```
+##_____FEMALES
+
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_f$sum_pre
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Female leaf consumption pre insecticide treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_f, qqPlot(sum_pre)))
+
+print(shapiro.test(all_f$sum_pre))
+```
+
+##_____MALES
+
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_m$sum_pre
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Male leaf consumption pre insecticide treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_m, qqPlot(sum_pre)))
+
+print(shapiro.test(all_m$sum_pre))
+```
+
+
+##--F0 FOOD-PER INSECTICIDE TREATMENT
+##_____FM
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all$sum_per
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Leaf consumption during insecticide treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all, qqPlot(sum_per)))
+
+print(shapiro.test(all$sum_per))
+```
+##_____FEMALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_f$sum_per
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Female leaf consumption during insecticide treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_f, qqPlot(sum_per)))
+
+print(shapiro.test(all_f$sum_per))
+```
+##_____MALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_m$sum_per
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Male leaf consumption during insecticide treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_m, qqPlot(sum_per)))
+
+print(shapiro.test(all_m$sum_per))
+```
+##--F0 FOOD-POST INSECTICIDE TREATMENT
+##_____FM
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all$sum_post
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Leaf consumption post insecticide treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all, qqPlot(sum_post)))
+
+print(shapiro.test(all$sum_post))
+```
+##_____FEMALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_f$sum_post
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Female leaf consumption post insecticide treatment treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_f, qqPlot(sum_post)))
+
+print(shapiro.test(all_f$sum_post))
+```
+##_____MALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_m$sum_post
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Male leaf consumption post insecticide treatment treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_m, qqPlot(sum_post)))
+
+print(shapiro.test(all_m$sum_post))
+```
+##--F0 FOOD TWO DAYS AFTER I. 
+##_____FEMALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_f$feeding_23.01
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Female leaf consumption two days after insecticide treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_f, qqPlot(feeding_23.01)))
+
+print(shapiro.test(all_f$feeding_23.01))
+```
+##_____MALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_m$feeding_23.01
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Male leaf consumption two days after insecticide treatment", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_m, qqPlot(feeding_23.01)))
+
+print(shapiro.test(all_m$feeding_23.01))
+```
+
+
+##--F0 MATING DELAY
+
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_pairs$min_until_mating
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Time until mating", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_pairs, qqPlot(min_until_mating)))
+
+print(shapiro.test(all_pairs$min_until_mating))
+```
+
+##--F1 EGG NO. 
+
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_pairs$egg_no._corrected
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Egg no.", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_pairs, qqPlot(egg_no._corrected)))
+
+print(shapiro.test(all_pairs$egg_no._corrected))
+```
+##--F1 HATCHING RATE 
+
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_pairs$hatching_rate
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Hatching rate", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_pairs, qqPlot(hatching_rate)))
+
+print(shapiro.test(all_pairs$hatching_rate))
+```
+####_____data transformation: left- to right-skewed // + 1
+
+```{r}
+
+# Remove rows with NA values in the egg_nr_total column
+all_pairs <- all_pairs[!is.na(all_pairs$hatching_rate), ]
+
+# Ensure there are no NA values in egg_nr_total
+summary(all_pairs$hatching_rate)
+
+# Calculate the transformation
+max_hatching_rate <- max(all_pairs$hatching_rate, na.rm = TRUE)
+hatching_rate_transform <- log10(max_hatching_rate + 1 - all_pairs$hatching_rate)
+
+# Check if the transformation introduced any NA values
+summary(hatching_rate_transform)
+
+# Add the transformed data to the dataframe
+all_pairs$hatching_rate_transform <- hatching_rate_transform
+
+# Add 1 to each data point to avoid zero values
+hatching_rate_transform_add <- hatching_rate_transform + 1
+all_pairs$hatching_rate_transform_add <- hatching_rate_transform_add
+
+# Verify the transformation
+summary(all_pairs$hatching_rate_transform_add)
+
+```
+##_____transformed data
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_pairs$hatching_rate_transform_add
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Transformed hatching rate", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_pairs, qqPlot(hatching_rate_transform_add)))
+
+print(shapiro.test(all_pairs$hatching_rate_transform_add))
+```
+##--F0 FOOD TOTAL
+###_____FM
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all$food_total
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Total leaf area consumed during larval phase", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all, qqPlot(food_total)))
+
+print(shapiro.test(all$food_total))
+```
+###_____FEMALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_f$food_total
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Female total leaf area consumed during larval phase", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_f, qqPlot(food_total)))
+
+print(shapiro.test(all_f$food_total))
+```
+###_____MALES
+hist, qq-plot and shapiro
+```{r}
+# Assuming 'all' is your dataset and 'weight_adult' is the variable
+data <- all_m$food_total
+
+# Remove missing values
+data <- na.omit(data)
+
+# Create a histogram
+hist(data, main = "Histogram with Fitted Distribution", xlab = "Male total leaf area consumed during larval phase", col = "lightblue", border = "black", prob = TRUE)
+
+# Fit a kernel density estimate (KDE) to the data
+fitted_density <- density(data)
+
+# Overlay the fitted distribution line on the histogram
+lines(fitted_density, col = "red", lwd = 2)
+
+# Add a legend
+legend("topright", legend = c("Histogram", "Fitted Distribution"), fill = c("lightblue", "red"))
+
+print(with(all_m, qqPlot(food_total)))
+
+print(shapiro.test(all_m$food_total))
+```
+#++++++Kaplan Meier survival+++++++++++++++++++++++++++++++++++++
+```{r}
+survdiff(Surv(time_days, status==1)~treatment, data=all, rho=0)
+```
+
+same same, with p-value with 3 digits
+```{r}
+# Load necessary library
+library(survival)
+
+# Perform the survival analysis
+surv_diff <- survdiff(Surv(time_days, status == 1) ~ treatment, data = all, rho = 0)
+
+# Extract the chi-squared statistic and p-value
+chisq <- surv_diff$chisq
+p_value <- pchisq(chisq, length(surv_diff$n) - 1, lower.tail = FALSE)
+
+# Format the results to three decimal places
+chisq_formatted <- formatC(chisq, format = "f", digits = 3)
+p_value_formatted <- formatC(p_value, format = "f", digits = 3)
+
+# Print the formatted results
+cat("Chi-squared statistic:", chisq_formatted, "\n")
+cat("p-value:", p_value_formatted, "\n")
+
+```
+```{r}
+library(survminer)
+# Perform pairwise log-rank tests
+pairwise_results <- pairwise_survdiff(
+  Surv(time_days, status == 1) ~ treatment,
+  data = all,
+  p.adjust.method = "BH"  # adjust for multiple testing (e.g., Benjamini-Hochberg)
+)
+
+# Print the results
+print(pairwise_results)
+```
+
+
+```{r}
+# =========================================================
+# Full factorial Cox proportional hazards analysis
+# =========================================================
+
+# -----------------------------------------
+# 1. Create survival object
+# -----------------------------------------
+surv_object <- Surv(time = all_m$time_days, event = all_m$status == 1)
+
+# -----------------------------------------
+# 2. Fit Cox regression with ALAN * Cooper interaction
+# -----------------------------------------
+cox <- coxph(surv_object ~ ALAN * Cooper2, data = all_m)
+cox   # prints summary
+
+# Type II ANOVA for main effects + interaction
+anov_surv <- Anova(cox, type = "II")
+anov_surv
+
+# -----------------------------------------
+# 3. Post-hoc comparisons with emmeans
+# -----------------------------------------
+
+# Set up reference grid
+ref_grid(cox)
+
+# Estimated marginal means for ALAN * Cooper combinations
+cox.emm <- emmeans(cox, ~ ALAN * Cooper2, type = "response")
+
+# Pairwise comparisons among all combinations
+ph.cox <- pwpm(cox.emm)
+ph.cox
+
+# Optional: compare ALAN within Cooper levels
+emmeans(cox, ~ ALAN | Cooper2, type = "response")
+
+# Optional: compare Cooper within ALAN levels
+emmeans(cox, ~ Cooper2 | ALAN, type = "response")
+
+# -----------------------------------------
+# 4. Optional: Kaplan-Meier curves for visualization
+# -----------------------------------------
+all_m$group <- interaction(all_m$ALAN, all_m$Cooper2, sep = "_")
+fit_km <- survfit(Surv(time_days, status == 1) ~ group, data = all_m)
+
+ggsurvplot(
+  fit_km,
+  data = all_m,
+  risk.table = TRUE,
+  conf.int = FALSE,
+  pval = FALSE,
+  palette = "Dark2",
+  ggtheme = theme_classic(),
+  xlab = "Days",
+  ylab = "Survival probability",
+  legend.title = "ALAN × Cooper"
+)
+
+```
+
+```{r}
+library(survival)
+cox.zph(cox)
+```
+```{r}
+cox_simple <- coxph(
+  Surv(time_days, status == 1) ~ ALAN + Cooper2,
+  data = all_m
+)
+
+cox.zph(cox_simple)
+```
+```{r}
+library(survival)
+
+# clean factors
+all_m$ALAN <- as.factor(all_m$ALAN)
+all_m$Cooper2 <- as.factor(all_m$Cooper2)
+
+# simple Cox model
+cox_simple <- coxph(
+  Surv(time_days, status == 1) ~ ALAN + Cooper2,
+  data = all_m
+)
+
+summary(cox_simple)
+
+cox.zph(cox_simple)
+```
+
+
+#++++++models++++++++++++++++++++++++++++++++++++
+
+##NEW --F0 LARVAL MASS FM
+###separate models for m and f? -> NO
+
+AIC and df increase with sex added, at the same time the ANOVA indicates that the model including sex is not a better fit. Thus, we won't add sex as a factorial covariate in the model. 
+
+```{r}
+shared_data <- all %>%
+  drop_na(mass_l, ALAN, Cooper, sex)
+
+mass_l_sex <- glmmTMB(mass_l ~ sex + ALAN*Cooper, 
+                    family = gaussian, 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+mass_l_wo <- glmmTMB(mass_l ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+anova(mass_l_sex, mass_l_wo)
+```
+
+###box effect
+
+let's see if box_nr is correlated with the larval mass:
+
+okay so only trend effect here, So let's check for spatial dependencies via bubble plot
+
+
+```{r}
+box_effect_mass_l <- glmmTMB(mass_l ~ box_nr, family = gaussian, data = all)
+Anova(box_effect_mass_l)
+```
+####bubble plot
+
+```{r}
+all_clean <- all %>% drop_na(mass_l)
+mass_l1 <- glm(mass_l ~ ALAN*Cooper, data = all_clean)
+
+E <- rstandard(mass_l1)
+mydata <- data.frame(E, all_clean$x, all_clean$y)
+coordinates(mydata) <- c("all_clean.x", "all_clean.y")
+
+bubble(mydata, "E",
+       main = "Residuals", xlab = "X-coordinates", 
+       ylab = "y-coordinates")
+       
+       
+     
+```
+####anova comparison of models
+
+model with box is not significantly better than the one without and more complex, thus, box effect won't be added here. 
+
+```{r}
+mass_l_wo <- glmmTMB(mass_l ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all, 
+                    na.action = na.omit, REML = TRUE)
+
+mass_l_box <- glmmTMB(mass_l ~ ALAN*Cooper + (1 | box_nr), 
+                    family = gaussian, 
+                    data = all, 
+                    na.action = na.omit, REML = TRUE)
+
+anova(mass_l_wo, mass_l_box)
+```
+###model fit with and without box effect
+fit is similar for with and without box effect, thus, we leave the box effect out as suggested by the ANOVA.
+
+```{r}
+mass_l <- glmmTMB(mass_l ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+fm1 <- mass_l
+```
+
+
+```{r}
+Dharma_fm1 <- simulateResiduals(fm1, n = 1000, plot = "quantile")
+plot (Dharma_fm1)
+
+testDispersion(Dharma_fm1)
+testZeroInflation(Dharma_fm1)
+
+r <- residuals(fm1, type = "pearson")
+hist(r)
+
+check_collinearity(fm1)
+check_residuals(fm1)
+```
+
+###results
+
+```{r}
+print(summary(fm1))
+print(Anova(fm1))
+```
+
+
+##NEW --F0 DEVTIME ADULT FM
+###separate models for m and f? -> NO
+
+AIC and df increase with sex added, at the same time the ANOVA indicates that the model including sex is not a better fit. Thus, we won't add sex as a factorial covariate in the model. 
+
+```{r}
+shared_data <- all %>%
+  drop_na(devtime_adult, ALAN, Cooper, sex)
+
+dev_a_sex <- glmmTMB(devtime_adult ~ sex + ALAN*Cooper, 
+                    family = genpois(link = "log"), 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+dev_a_wo <- glmmTMB(devtime_adult ~ ALAN*Cooper, 
+                    family = genpois(link = "log"), 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+anova(dev_a_sex, dev_a_wo)
+```
+
+###box effect
+
+let's see if box_nr is correlated with the dev_time:
+
+yesss, very strongly!!! So let's check for spatial dependencies via bubble plot
+
+
+```{r}
+box_effect_dev_a <- glmmTMB(devtime_adult ~ box_nr, family = genpois(link = "log"), data = all)
+Anova(box_effect_dev_a)
+```
+####bubble plot
+
+```{r}
+all_clean <- all %>% drop_na(devtime_adult)
+devad <- glm(devtime_adult ~ ALAN*Cooper, data = all_clean)
+
+E <- rstandard(devad)
+mydata <- data.frame(E, all_clean$x, all_clean$y)
+coordinates(mydata) <- c("all_clean.x", "all_clean.y")
+
+bubble(mydata, "E",
+       main = "Residuals", xlab = "X-coordinates", 
+       ylab = "y-coordinates")
+       
+       
+     
+```
+####anova comparison of models
+
+model including box effect is highly significantly better (REML) than the one without, and has lower AIC. Thus, we can live with the higher complexity (more degrees of freedom) and add the box effect here in the model. 
+
+```{r}
+dev_a <- glmmTMB(devtime_adult ~ ALAN*Cooper, 
+                    family = genpois(link = "log"), 
+                    data = all, 
+                    na.action = na.omit, REML = TRUE)
+
+dev_a_box <- glmmTMB(devtime_adult ~ ALAN*Cooper + (1 | box_nr), 
+                    family = genpois(link = "log"), 
+                    data = all, 
+                    na.action = na.omit, REML = TRUE)
+
+anova(dev_a, dev_a_box)
+```
+###model fit with and without box effect
+
+fit is similar for model with and without box effect, thus, we implement box effect!
+
+```{r}
+dev_a <- glmmTMB(devtime_adult ~ ALAN*Cooper, 
+                    family = genpois(link = "log"), 
+                    data = all, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+```{r}
+dev_a_box <- glmmTMB(devtime_adult ~ ALAN*Cooper + (1 | box_nr), 
+                    family = genpois(link = "log"), 
+                    data = all, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+```{r}
+fm1 <- dev_a_box
+```
+
+
+```{r}
+Dharma_fm1 <- simulateResiduals(fm1, n = 1000, plot = "quantile")
+plot (Dharma_fm1)
+
+testDispersion(Dharma_fm1)
+testZeroInflation(Dharma_fm1)
+
+r <- residuals(fm1, type = "pearson")
+hist(r)
+
+check_collinearity(fm1)
+check_residuals(fm1)
+```
+###results
+
+```{r}
+print(summary(fm1))
+print(Anova(fm1))
+```
+
+####post-hoc: Tukey HSD
+
+```{r}
+# Calculate the estimated marginal means
+emm_model <- emmeans(fm1, ~  ALAN*Cooper, adjust = "holm")
+
+# Conduct pairwise comparisons
+pairwise_results <- pairs(emm_model)
+
+# Summary of pairwise comparisons
+summary(pairwise_results)
+
+```
+```{r}
+all_clean <- all %>% drop_na(devtime_adult)
+
+# 1. Load packages
+library(car)      # for Levene test
+library(emmeans)  # for post-hoc comparisons
+library(ARTool)
+
+# 2. Make sure factors are correctly defined
+all_clean$treatment <- factor(all_clean$treatment, levels = c("M","A","I","C"))
+
+# 3. Fit two-way ANOVA model
+# If only one factor, it is still ANOVA
+mf1 <- art(devtime_adult ~ treatment, data = all_clean)
+
+
+anova(mf1)
+# 4. Check residuals for normality
+shapiro.test(residuals(mf1))      # Shapiro-Wilk test
+qqnorm(residuals(mf1)); qqline(residuals(mf1))  # QQ plot
+
+# 5. Check homogeneity of variances
+leveneTest(devtime_adult ~ treatment, data = all_clean)
+
+# 6. Summary of ANOVA
+summary(mf1)
+
+# 7. Post-hoc pairwise comparisons (Tukey)
+emmeans(mf1, pairwise ~ treatment, adjust = "tukey")
+
+```
+
+
+
+
+##NEW --F0 ADULT MASS
+###separate models for m and f? -> YES
+
+Model with sex is highly significantly better, with lower AIC. So clearly two separate models!
+
+```{r}
+shared_data <- all %>%
+  drop_na(mass_a, ALAN, Cooper, sex)
+
+mass_a_sex <- glmmTMB(mass_a ~ sex + ALAN*Cooper, 
+                    family = gaussian, 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+mass_a_wo <- glmmTMB(mass_a ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+anova(mass_a_sex, mass_a_wo)
+```
+
+
+
+
+
+###_____FEMALES
+###box effect
+
+no indication for a box effect here. Thus, no bubble plot and anova comparison of models with and without box effect.
+
+```{r}
+box_effect_mass_a_f <- glmmTMB(mass_a ~ box_nr, family = gaussian, data = all_f)
+Anova(box_effect_mass_a_f)
+```
+
+```{r}
+mass_a_f <- glmmTMB(mass_a ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_f, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+f1 <- mass_a_f
+```
+
+
+```{r}
+Dharma_f1 <- simulateResiduals(f1, n = 1000, plot = "quantile")
+plot (Dharma_f1)
+
+testDispersion(Dharma_f1)
+testZeroInflation(Dharma_f1)
+
+r <- residuals(f1, type = "pearson")
+hist(r)
+
+check_collinearity(f1)
+check_residuals(f1)
+```
+###results
+
+```{r}
+print(summary(f1))
+print(Anova(f1))
+```
+
+####post-hoc: Tukey HSD
+
+```{r}
+# Calculate the estimated marginal means
+emm_model <- emmeans(f1, ~ ALAN*Cooper, adjust = "holm")
+
+# Conduct pairwise comparisons
+pairwise_results <- pairs(emm_model)
+
+# Summary of pairwise comparisons
+summary(pairwise_results)
+
+```
+
+###_____MALES
+###box effect
+
+no indication for a box effect here. Thus, no bubble plot and anova comparison of models with and without box effect.
+
+```{r}
+box_effect_mass_a_m <- glmmTMB(mass_a ~ box_nr, family = gaussian, data = all_m)
+Anova(box_effect_mass_a_m)
+```
+
+```{r}
+mass_a_m <- glmmTMB(mass_a ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_m, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+m1 <- mass_a_m
+```
+
+
+```{r}
+Dharma_m1 <- simulateResiduals(m1, n = 1000, plot = "quantile")
+plot (Dharma_m1)
+
+testDispersion(Dharma_m1)
+testZeroInflation(Dharma_m1)
+
+r <- residuals(m1, type = "pearson")
+hist(r)
+
+check_collinearity(m1)
+check_residuals(m1)
+```
+###results
+
+```{r}
+print(summary(m1))
+print(Anova(m1))
+```
+```{r}
+# 1. Load packages
+library(car)      # for Levene test
+library(emmeans)  # for post-hoc comparisons
+
+# 2. Make sure factors are correctly defined
+all_m$treatment <- factor(all_m$treatment, levels = c("M","A","I","C"))
+
+# 3. Fit two-way ANOVA model
+# If only one factor, it is still ANOVA
+m1 <- aov(mass_a ~ treatment, data = all_m)
+
+# 4. Check residuals for normality
+shapiro.test(residuals(m1))      # Shapiro-Wilk test
+qqnorm(residuals(m1)); qqline(residuals(m1))  # QQ plot
+
+# 5. Check homogeneity of variances
+leveneTest(mass_a ~ treatment, data = all_m)
+
+# 6. Summary of ANOVA
+summary(m1)
+
+# 7. Post-hoc pairwise comparisons (Tukey)
+emmeans(m1, pairwise ~ treatment, adjust = "tukey")
+
+```
+
+
+
+
+
+
+####post-hoc: Tukey HSD
+
+```{r}
+# Calculate the estimated marginal means
+emm_model <- emmeans(m1, ~ ALAN*Cooper, adjust = "holm")
+
+# Conduct pairwise comparisons
+pairwise_results <- pairs(emm_model)
+
+# Summary of pairwise comparisons
+summary(pairwise_results)
+
+```
+##NEW --F0 FOOD PRE INSECTICIDE 
+###separate models for m and f? -> MAYBE YES
+
+no clear indication that the model with sex is better than the one without. However, if we split up the mass data, it might also be reasonable to split up the feeding data. Further, since the feeding indices are also implementing the mass, they should also be calculated separately for males and females. So it makes only sense to split this data, too. 
+
+```{r}
+shared_data <- all %>%
+  drop_na(sum_pre, treatment, sex)
+
+food_pre_sex <- glmmTMB(sum_pre ~ sex + ALAN*Cooper, 
+                    family = gaussian, 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+food_pre_wo <- glmmTMB(sum_pre ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+anova(food_pre_sex, food_pre_wo)
+```
+
+###--FEMALES
+###box effect
+
+no indication for a box effect here. Thus, no bubble plot and anova comparison of models with and without box effect.
+
+```{r}
+box_effect_food_pre_f <- glmmTMB(sum_pre ~ box_nr, family = gaussian, data = all_f)
+Anova(box_effect_food_pre_f)
+```
+
+```{r}
+food_pre_f <- glmmTMB(sum_pre ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_f, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+f2 <- food_pre_f
+```
+
+
+```{r}
+Dharma_f2 <- simulateResiduals(f2, n = 1000, plot = "quantile")
+plot (Dharma_f2)
+
+testDispersion(Dharma_f2)
+testZeroInflation(Dharma_f2)
+
+r <- residuals(f2, type = "pearson")
+hist(r)
+
+check_collinearity(f2)
+check_residuals(f2)
+```
+###results
+
+```{r}
+print(summary(f2))
+print(Anova(f2))
+```
+###_____MALES
+###box effect
+
+no indication for a box effect here. Thus, no bubble plot and anova comparison of models with and without box effect.
+
+```{r}
+box_effect_food_pre_m <- glmmTMB(sum_pre ~ box_nr, family = gaussian, data = all_m)
+Anova(box_effect_food_pre_m)
+```
+
+```{r}
+food_pre_m <- glmmTMB(sum_pre ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_m, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+m2 <- food_pre_m
+```
+
+
+```{r}
+Dharma_m2 <- simulateResiduals(m2, n = 1000, plot = "quantile")
+plot (Dharma_m2)
+
+testDispersion(Dharma_m2)
+testZeroInflation(Dharma_m2)
+
+r <- residuals(m2, type = "pearson")
+hist(r)
+
+check_collinearity(m2)
+check_residuals(m2)
+```
+###results
+
+```{r}
+print(summary(m2))
+print(Anova(m2))
+```
+##NEW --F0 FOOD PER INSECTICIDE 
+###separate models for m and f? -> YES
+
+The model with sex is slightly better than the one without. Since we have already split up the pre insectide consumption data, this further supports the separate look at the sexes.  
+
+```{r}
+shared_data <- all %>%
+  drop_na(sum_per, treatment, sex)
+
+food_per_sex <- glmmTMB(sum_per ~ sex + ALAN*Cooper, 
+                    family = gaussian, 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+food_per_wo <- glmmTMB(sum_per ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+anova(food_per_sex, food_per_wo)
+```
+
+###_____FEMALES
+###box effect
+
+very strong correlation between box_nr and consumption during the insectide treatment! Thus, we look at the bubble plot and compare between model with and without box_nr as random effect.  
+
+```{r}
+box_effect_food_per_f <- glmmTMB(sum_per ~ box_nr, family = gaussian, data = all_f)
+Anova(box_effect_food_per_f)
+```
+
+####bubble plot
+
+```{r}
+all_f_clean <- all_f %>% drop_na(sum_per)
+sumper <- glm(sum_per ~ treatment, data = all_f_clean)
+
+E <- rstandard(sumper)
+mydata <- data.frame(E, all_f_clean$x, all_f_clean$y)
+coordinates(mydata) <- c("all_f_clean.x", "all_f_clean.y")
+
+bubble(mydata, "E",
+       main = "Residuals", xlab = "X-coordinates", 
+       ylab = "y-coordinates")
+       
+       
+     
+```
+####anova comparison of models
+
+there are only 3 observations in box 1, thus, there is a non-positive-definite Hessian matrix. That means I cannot compare the two models in this way. However, if I look at the summary output of the model with the box_nr, I can see that the random intercept of box_nr is very close to zero, which means that the variance of the random intercept is very small compared to the variance of the residuals. This suggests that the random effect is not reasonable here. 
+
+```{r}
+sum_per_wo <- glmmTMB(sum_per ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_f, 
+                    na.action = na.omit, REML = TRUE)
+
+sum_per_box <- glmmTMB(sum_per ~ ALAN*Cooper + (1 | box_nr), 
+                    family = gaussian, 
+                    data = all_f, 
+                    na.action = na.omit, REML = TRUE)
+
+anova(sum_per_wo, sum_per_box)
+```
+
+
+```{r}
+food_per_f <- glmmTMB(sum_per ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_f, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+f3 <- food_per_f
+```
+
+
+```{r}
+Dharma_f3 <- simulateResiduals(f3, n = 1000, plot = "quantile")
+plot (Dharma_f3)
+
+testDispersion(Dharma_f3)
+testZeroInflation(Dharma_f3)
+
+r <- residuals(f3, type = "pearson")
+hist(r)
+
+check_collinearity(f3)
+check_residuals(f3)
+```
+###results
+
+```{r}
+print(summary(f3))
+print(Anova(f3))
+```
+###_____MALES
+###box effect
+
+slight box effect here. Lets check bubble plot and anove just to be sure. 
+
+```{r}
+box_effect_food_per_m <- glmmTMB(sum_per ~ box_nr, family = gaussian, data = all_m)
+Anova(box_effect_food_per_m)
+```
+####bubble plot
+
+```{r}
+all_m_clean <- all_m %>% drop_na(sum_per)
+sumper <- glm(sum_per ~ treatment, data = all_m_clean)
+
+E <- rstandard(sumper)
+mydata <- data.frame(E, all_m_clean$x, all_m_clean$y)
+coordinates(mydata) <- c("all_m_clean.x", "all_m_clean.y")
+
+bubble(mydata, "E",
+       main = "Residuals", xlab = "X-coordinates", 
+       ylab = "y-coordinates")
+       
+       
+     
+```
+####anova comparison of models
+
+There is no indication that the model is significantly better with the random intercept. We will not implement box as a random effect to reduce the model complexity. 
+
+```{r}
+sum_per_wo <- glmmTMB(sum_per ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_m, 
+                    na.action = na.omit, REML = TRUE)
+
+sum_per_box <- glmmTMB(sum_per ~ ALAN*Cooper + (1 | box_nr), 
+                    family = gaussian, 
+                    data = all_m, 
+                    na.action = na.omit, REML = TRUE)
+
+anova(sum_per_wo, sum_per_box)
+```
+The levene test for homogeneity of variance was significant, so I modelled the heteroscedasticity explicitly by implementing the dispformula thereby indicating that the variance differs between treatments. This fixed the levene problem and this not decrease model fit as diagnosted by DHARMa.
+
+```{r}
+food_per_m <- glmmTMB(sum_per ~ ALAN*Cooper,
+                      dispformula = ~ ALAN*Cooper,
+                    family = gaussian, 
+                    data = all_m, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+m3 <- food_per_m
+```
+
+
+```{r}
+Dharma_m3 <- simulateResiduals(m3, n = 1000, plot = "quantile")
+plot (Dharma_m3)
+
+testDispersion(Dharma_m3)
+testZeroInflation(Dharma_m3)
+
+r <- residuals(m3, type = "pearson")
+hist(r)
+
+check_collinearity(m3)
+check_residuals(m3)
+```
+###results
+
+```{r}
+print(summary(m3))
+print(Anova(m3))
+```
+####post-hoc: Tukey HSD
+
+```{r}
+# Calculate the estimated marginal means
+emm_model <- emmeans(m3, ~ ALAN*Cooper, adjust = "holm")
+
+# Conduct pairwise comparisons
+pairwise_results <- pairs(emm_model)
+
+# Summary of pairwise comparisons
+summary(pairwise_results)
+
+```
+
+
+
+##NEW --F0 FOOD POST INSECTICIDE 
+###separate models for m and f? -> 
+
+The model with sex is slightly better than the one without. Since we have already split up the pre insectide consumption data, this further supports the separate look at the sexes.  
+
+```{r}
+shared_data <- all %>%
+  drop_na(sum_post, treatment, sex)
+
+food_post_sex <- glmmTMB(sum_post ~ sex + ALAN*Cooper, 
+                    family = genpois(), 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+food_post_wo <- glmmTMB(sum_post ~ ALAN*Cooper, 
+                    family = genpois(), 
+                    data = shared_data, 
+                    na.action = na.omit, REML = FALSE)
+
+anova(food_post_sex, food_post_wo)
+```
+
+###_____FEMALES
+###box effect
+
+very strong correlation between box_nr and consumption during the insectide treatment! Thus, we look at the bubble plot and compare between model with and without box_nr as random effect.  
+
+```{r}
+box_effect_food_post_f <- glmmTMB(sum_post ~ box_nr, family = genpois, data = all_f)
+Anova(box_effect_food_post_f)
+```
+
+####bubble plot
+
+```{r}
+all_f_clean <- all_f %>% drop_na(sum_post)
+sumpost <- glm(sum_per ~ treatment, data = all_f_clean)
+
+E <- rstandard(sumpost)
+mydata <- data.frame(E, all_f_clean$x, all_f_clean$y)
+coordinates(mydata) <- c("all_f_clean.x", "all_f_clean.y")
+
+bubble(mydata, "E",
+       main = "Residuals", xlab = "X-coordinates", 
+       ylab = "y-coordinates")
+       
+       
+     
+```
+####anova comparison of models
+
+okay so the model with the box as random effect is highly significantly better in terms of AIC and BIC, so we implement it. 
+
+```{r}
+sum_post_wo <- glmmTMB(sum_post ~ ALAN*Cooper, 
+                    family = genpois, 
+                    data = all_f, 
+                    na.action = na.omit, REML = TRUE)
+
+sum_post_box <- glmmTMB(sum_post ~ ALAN*Cooper + (1 | box_nr), 
+                    family = genpois, 
+                    data = all_f, 
+                    na.action = na.omit, REML = TRUE)
+
+anova(sum_post_wo, sum_post_box)
+```
+
+Zero-inflation implemented because the DHARMa tool indicated a zero inflation without it (the data does include a high number of zeros). With it, the residuals are still a bit right-skewed but the diagnostic tests indicates that they are normally distributed. 
+
+~1 means: include only an intercept, i.e., estimate one global probability of an excess zero for the whole dataset.
+
+This is the simplest way to model zero-inflation — it assumes the extra zero-probability is the same across all individuals, regardless of treatment, box, etc.
+
+I had treatment groups with no zeros (e.g., A and M).
+
+Trying to include treatment in the ziformula would mean that the model couldn't estimate the zero probability for those groups → rank deficiency, NaNs.
+
+Using ~1 avoids this, by not trying to distinguish between treatments in the zero-inflation part.
+
+```{r}
+food_post_f <- glmmTMB(sum_post ~ ALAN*Cooper + (1|box_nr), 
+                       ziformula = ~1, 
+                    family = genpois, 
+                    data = all_f, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+```{r}
+f4 <- food_post_f
+```
+
+
+```{r}
+Dharma_f4 <- simulateResiduals(f4, n = 1000, plot = "quantile")
+plot (Dharma_f4)
+
+testDispersion(Dharma_f4)
+testZeroInflation(Dharma_f4)
+
+r <- residuals(f4, type = "pearson")
+hist(r)
+
+check_collinearity(f4)
+check_residuals(f4)
+```
+###results
+
+```{r}
+print(summary(f4))
+print(Anova(f4))
+```
+####post-hoc: Tukey HSD
+
+```{r}
+# Calculate the estimated marginal means
+emm_model <- emmeans(f4, ~ ALAN*Cooper, adjust = "holm")
+
+# Conduct pairwise comparisons
+pairwise_results <- pairs(emm_model)
+
+# Summary of pairwise comparisons
+summary(pairwise_results)
+
+```
+
+###_____MALES
+###box effect
+
+slight box effect here. Lets check bubble plot and anove just to be sure. 
+
+```{r}
+box_effect_food_post_m <- glmmTMB(sum_post ~ box_nr, family = genpois, data = all_m)
+Anova(box_effect_food_post_m)
+```
+####bubble plot
+
+```{r}
+all_m_clean <- all_m %>% drop_na(sum_post)
+sumpost <- glm(sum_post ~ treatment, data = all_m_clean)
+
+E <- rstandard(sumpost)
+mydata <- data.frame(E, all_m_clean$x, all_m_clean$y)
+coordinates(mydata) <- c("all_m_clean.x", "all_m_clean.y")
+
+bubble(mydata, "E",
+       main = "Residuals", xlab = "X-coordinates", 
+       ylab = "y-coordinates")
+       
+       
+     
+```
+####anova comparison of models
+
+There is no indication that the model is significantly better with the random intercept. We will not implement box as a random effect to reduce the model complexity. 
+
+```{r}
+sum_post_wo <- glmmTMB(sum_post ~ ALAN*Cooper, 
+                    family = genpois, 
+                    data = all_m, 
+                    na.action = na.omit, REML = TRUE)
+
+sum_post_box <- glmmTMB(sum_post ~ ALAN*Cooper + (1 | box_nr), 
+                    family = genpois, 
+                    data = all_m, 
+                    na.action = na.omit, REML = TRUE)
+
+anova(sum_post_wo, sum_post_box)
+```
+
+```{r}
+food_post_m <- glmmTMB(sum_post ~ ALAN*Cooper,
+                    dispformula = ~ ALAN*Cooper,
+                    family = genpois, 
+                    data = all_m, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+m4 <- food_post_m
+```
+
+
+```{r}
+Dharma_m4 <- simulateResiduals(m4, n = 1000, plot = "quantile")
+plot (Dharma_m4)
+
+testDispersion(Dharma_m4)
+testZeroInflation(Dharma_m4)
+
+r <- residuals(m4, type = "pearson")
+hist(r)
+
+check_collinearity(m4)
+check_residuals(m4)
+```
+###results
+
+```{r}
+print(summary(m4))
+print(Anova(m4))
+```
+##--F0 FOOD TWO DAYS AFTER I.  
+
+###_____FEMALES
+###box effect
+
+very strong correlation between box_nr and consumption during the insectide treatment! Thus, we look at the bubble plot and compare between model with and without box_nr as random effect.  
+
+```{r}
+box_effect_food_23_f <- glmmTMB(feeding_23.01 ~ box_nr, family = genpois, data = all_f)
+Anova(box_effect_food_23_f)
+```
+
+####bubble plot
+
+```{r}
+all_f_clean <- all_f %>% drop_na(feeding_23.01)
+feeding_23.01 <- glm(sum_per ~ treatment, data = all_f_clean)
+
+E <- rstandard(feeding_23.01)
+mydata <- data.frame(E, all_f_clean$x, all_f_clean$y)
+coordinates(mydata) <- c("all_f_clean.x", "all_f_clean.y")
+
+bubble(mydata, "E",
+       main = "Residuals", xlab = "X-coordinates", 
+       ylab = "y-coordinates")
+       
+       
+     
+```
+####anova comparison of models
+
+okay so the model with the box as random effect is highly significantly better in terms of AIC and BIC, so we implement it. 
+
+```{r}
+feeding_23.01_wo <- glmmTMB(feeding_23.01 ~ treatment, 
+                    family = genpois, 
+                    data = all_f, 
+                    na.action = na.omit, REML = TRUE)
+
+feeding_23.01_box <- glmmTMB(sum_post ~ treatment + (1 | box_nr), 
+                    family = genpois, 
+                    data = all_f, 
+                    na.action = na.omit, REML = TRUE)
+
+anova(feeding_23.01_wo, feeding_23.01_box)
+```
+
+Zero-inflation implemented because the DHARMa tool indicated a zero inflation without it (the data does include a high number of zeros). With it, the residuals are still a bit right-skewed but the diagnostic tests indicates that they are normally distributed. 
+
+~1 means: include only an intercept, i.e., estimate one global probability of an excess zero for the whole dataset.
+
+This is the simplest way to model zero-inflation — it assumes the extra zero-probability is the same across all individuals, regardless of treatment, box, etc.
+
+I had treatment groups with no zeros (e.g., A and M).
+
+Trying to include treatment in the ziformula would mean that the model couldn't estimate the zero probability for those groups → rank deficiency, NaNs.
+
+Using ~1 avoids this, by not trying to distinguish between treatments in the zero-inflation part.
+
+```{r}
+feeding_23.01_f <- glmmTMB(feeding_23.01 ~ ALAN*Cooper + (1|box_nr), 
+                       ziformula = ~1, 
+                    family = genpois, 
+                    data = all_f, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+```{r}
+f5 <- feeding_23.01_f
+```
+
+
+```{r}
+Dharma_f5 <- simulateResiduals(f5, n = 1000, plot = "quantile")
+plot (Dharma_f5)
+
+testDispersion(Dharma_f5)
+testZeroInflation(Dharma_f5)
+
+r <- residuals(f5, type = "pearson")
+hist(r)
+
+check_collinearity(f5)
+check_residuals(f5)
+```
+###results
+
+```{r}
+print(summary(f5))
+print(Anova(f5))
+```
+###_____MALES
+###box effect
+
+slight box effect here. Lets check bubble plot and anove just to be sure. 
+
+```{r}
+box_effect_feeding_23.01_m <- glmmTMB(feeding_23.01 ~ box_nr, family = genpois, data = all_m)
+Anova(box_effect_feeding_23.01_m)
+```
+####bubble plot
+
+```{r}
+all_m_clean <- all_m %>% drop_na(feeding_23.01)
+feed_23 <- glm(feeding_23.01 ~ treatment, data = all_m_clean)
+
+E <- rstandard(feed_23)
+mydata <- data.frame(E, all_m_clean$x, all_m_clean$y)
+coordinates(mydata) <- c("all_m_clean.x", "all_m_clean.y")
+
+bubble(mydata, "E",
+       main = "Residuals", xlab = "X-coordinates", 
+       ylab = "y-coordinates")
+       
+       
+     
+```
+####anova comparison of models
+
+There is no indication that the model is significantly better with the random intercept. We will not implement box as a random effect to reduce the model complexity. 
+
+```{r}
+feeding_23.01_wo <- glmmTMB(feeding_23.01 ~ treatment, 
+                    family = genpois, 
+                    data = all_m, 
+                    na.action = na.omit, REML = TRUE)
+
+feeding_23.01_box <- glmmTMB(feeding_23.01 ~ treatment + (1 | box_nr), 
+                    family = genpois, 
+                    data = all_m, 
+                    na.action = na.omit, REML = TRUE)
+
+anova(feeding_23.01_wo, feeding_23.01_box)
+```
+
+```{r}
+feeding_23.01_m <- glmmTMB(feeding_23.01 ~ treatment,
+                    dispformula = ~ treatment,
+                    family = genpois, 
+                    data = all_m, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+m5 <- feeding_23.01_m
+```
+
+
+```{r}
+Dharma_m5 <- simulateResiduals(m5, n = 1000, plot = "quantile")
+plot (Dharma_m5)
+
+testDispersion(Dharma_m5)
+testZeroInflation(Dharma_m5)
+
+r <- residuals(m5, type = "pearson")
+hist(r)
+
+check_collinearity(m5)
+check_residuals(m5)
+```
+###results
+
+```{r}
+print(summary(m5))
+print(Anova(m5))
+```
+##--F0 FOOD TOTAL  
+
+###_____FEMALES
+###box effect
+
+very strong correlation between box_nr and consumption during the insectide treatment! Thus, we look at the bubble plot and compare between model with and without box_nr as random effect.  
+
+```{r}
+box_effect_food_f <- glmmTMB(food_total ~ box_nr, family = gaussian, data = all_f)
+Anova(box_effect_food_f)
+```
+
+
+```{r}
+feeding_total_f <- glmmTMB(food_total ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_f, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+```{r}
+f10 <- feeding_total_f
+```
+
+
+```{r}
+Dharma_f10 <- simulateResiduals(f10, n = 1000, plot = "quantile")
+plot (Dharma_f10)
+
+testDispersion(Dharma_f10)
+testZeroInflation(Dharma_f10)
+
+r <- residuals(f10, type = "pearson")
+hist(r)
+
+check_collinearity(f10)
+check_residuals(f10)
+```
+###results
+
+```{r}
+print(summary(f10))
+print(Anova(f10))
+```
+####post-hoc: Tukey HSD
+
+```{r}
+# Calculate the estimated marginal means
+emm_model <- emmeans(f10, ~ ALAN*Cooper, adjust = "holm")
+
+# Conduct pairwise comparisons
+pairwise_results <- pairs(emm_model)
+
+# Summary of pairwise comparisons
+summary(pairwise_results)
+
+```
+
+###_____MALES
+###box effect
+
+very strong correlation between box_nr and consumption during the insectide treatment! Thus, we look at the bubble plot and compare between model with and without box_nr as random effect.  
+
+```{r}
+box_effect_food_m <- glmmTMB(food_total ~ box_nr, family = gaussian, data = all_m)
+Anova(box_effect_food_m)
+```
+
+
+```{r}
+feeding_total_m <- glmmTMB(food_total ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_m, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+```{r}
+m10 <- feeding_total_m
+```
+
+
+```{r}
+Dharma_m10 <- simulateResiduals(m10, n = 1000, plot = "quantile")
+plot (Dharma_m10)
+
+testDispersion(Dharma_m10)
+testZeroInflation(Dharma_m10)
+
+r <- residuals(m10, type = "pearson")
+hist(r)
+
+check_collinearity(m10)
+check_residuals(m10)
+```
+###results
+
+```{r}
+print(summary(m10))
+print(Anova(m10))
+```
+
+
+##NEW --MATING DELAY PAIRS
+###box effect
+
+no indications for box effect, thus no bubble plot and no anova comparison. 
+
+
+```{r}
+box_effect_mating_a <- glmmTMB(min_until_mating ~ box_nr, family = Gamma, data = all_pairs)
+Anova(box_effect_mating_a)
+```
+I used a log transformation to linearize the relationship. 
+
+```{r}
+mate <- glmmTMB(log(min_until_mating+1) ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_pairs, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+fm3 <- mate
+```
+
+
+```{r}
+Dharma_fm3 <- simulateResiduals(fm3, n = 1000, plot = "quantile")
+plot (Dharma_fm3)
+
+testDispersion(Dharma_fm3)
+testZeroInflation(Dharma_fm3)
+
+r <- residuals(fm3, type = "pearson")
+hist(r)
+
+check_collinearity(fm3)
+check_residuals(fm3)
+```
+###results
+
+```{r}
+print(summary(fm3))
+print(Anova(fm3))
+```
+
+##NEW --F1 EGG NO. PAIRS
+###box effect
+
+no indications for box effect, thus no bubble plot and no anova comparison. 
+
+
+```{r}
+box_effect_egg_no._corrected <- glmmTMB(egg_no._corrected ~ box_nr, family = gaussian, data = all_pairs)
+Anova(box_effect_egg_no._corrected)
+```
+
+```{r}
+egg <- glmmTMB(egg_no._corrected ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_pairs, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+fm4 <-egg
+```
+
+
+```{r}
+Dharma_fm4 <- simulateResiduals(fm4, n = 1000, plot = "quantile")
+plot (Dharma_fm4)
+
+testDispersion(Dharma_fm4)
+testZeroInflation(Dharma_fm4)
+
+r <- residuals(fm4, type = "pearson")
+hist(r)
+
+check_collinearity(fm4)
+check_residuals(fm4)
+```
+###results
+
+```{r}
+print(summary(fm4))
+print(Anova(fm4))
+```
+##NEW --F1 HATCHING RATE
+###box effect
+
+no indications for box effect, thus no bubble plot and no anova comparison. 
+
+
+```{r}
+box_effect_hatching_rate <- glmmTMB(hatching_rate_transform_add ~ box_nr, family = Gamma, data = all_pairs)
+Anova(box_effect_hatching_rate)
+```
+
+```{r}
+hatch <- glmmTMB(hatching_rate_transform_add ~ ALAN*Cooper,
+                 ziformula = ~1,
+                    family = Gamma, 
+                    data = all_pairs, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+fm5 <-hatch
+```
+
+
+```{r}
+Dharma_fm5 <- simulateResiduals(fm5, n = 1000, plot = "quantile")
+plot (Dharma_fm5)
+
+testDispersion(Dharma_fm5)
+testZeroInflation(Dharma_fm5)
+
+r <- residuals(fm5, type = "pearson")
+hist(r)
+
+check_collinearity(fm5)
+check_residuals(fm5)
+```
+###results
+
+```{r}
+print(summary(fm5))
+print(Anova(fm5))
+```
+####post-hoc: Tukey HSD
+
+```{r}
+# Calculate the estimated marginal means
+emm_model <- emmeans(fm5, ~ ALAN*Cooper, adjust = "holm")
+
+# Conduct pairwise comparisons
+pairwise_results <- pairs(emm_model)
+
+# Summary of pairwise comparisons
+summary(pairwise_results)
+
+```
+
+##--F0 RGR 
+###_____FEMALES
+###box effect
+
+no indication for a box effect here. Thus, no bubble plot and anova comparison of models with and without box effect.
+
+```{r}
+box_effect_RGR_f <- glmmTMB(delta_lp ~ box_nr, family = gaussian, data = all_f)
+Anova(box_effect_RGR_f)
+```
+
+```{r}
+RGR_f <- glmmTMB(delta_lp ~ mass_l+ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_f, 
+                    na.action = na.omit)
+```
+
+
+```{r}
+f5 <- RGR_f
+```
+
+
+```{r}
+Dharma_f5 <- simulateResiduals(f5, n = 1000, plot = "quantile")
+plot (Dharma_f5)
+
+testDispersion(Dharma_f5)
+testZeroInflation(Dharma_f5)
+
+r <- residuals(f5, type = "pearson")
+hist(r)
+
+check_collinearity(f5)
+check_residuals(f5)
+```
+###results
+
+```{r}
+print(summary(f5))
+print(Anova(f5))
+```
+
+###_____MALES
+###box effect
+
+no indication for a box effect here. Thus, no bubble plot and anova comparison of models with and without box effect.
+
+```{r}
+box_effect_RGR_m <- glmmTMB(delta_lp ~ box_nr, family = gaussian, data = all_m)
+Anova(box_effect_RGR_m)
+```
+
+```{r}
+RGR_m <- glmmTMB(delta_lp ~ mass_l+ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_m, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+m5 <- RGR_m
+```
+
+
+```{r}
+Dharma_m5 <- simulateResiduals(m5, n = 1000, plot = "quantile")
+plot (Dharma_m5)
+
+testDispersion(Dharma_m5)
+testZeroInflation(Dharma_m5)
+
+r <- residuals(m5, type = "pearson")
+hist(r)
+
+check_collinearity(m5)
+check_residuals(m5)
+```
+###results
+
+```{r}
+print(summary(m5))
+print(Anova(m5))
+```
+##--F0 ECI 
+###_____FEMALES
+###box effect
+
+same response variable as for RGR, thus, no additional check here. 
+
+
+```{r}
+ECI_f <- glmmTMB(log(delta_lp) ~ food_total+ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_f, 
+                    na.action = na.omit)
+```
+
+
+```{r}
+f6 <- ECI_f
+```
+
+
+```{r}
+Dharma_f6 <- simulateResiduals(f6, n = 1000, plot = "quantile")
+plot (Dharma_f6)
+
+testDispersion(Dharma_f6)
+testZeroInflation(Dharma_f6)
+
+r <- residuals(f6, type = "pearson")
+hist(r)
+
+check_collinearity(f6)
+check_residuals(f6)
+```
+###results
+
+```{r}
+print(summary(f6))
+print(Anova(f6))
+```
+
+```{r}
+# Plot with shape 22 and invisible lines
+ECIf <- ggplot(all_f_clean, aes(x = food_total, y = log(delta_lp),
+                        color = treatment, fill = treatment)) +
+  geom_point(size = 3.5, shape = 22, alpha = 0.9) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1.2,
+              aes(color = treatment)) +   # keeps mapping
+  scale_color_manual(
+    name = "Treatment",
+    values = c(
+      "C" = "#555352",  # Control (gray)
+      "A" = "#FFD045",  # ALAN (yellow)
+      "I" = "#56C0BC",  # Insecticide (blue)
+      "M" = "red"   # Mix (yellow)
+    )
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c(
+      "C" = "#555352",
+      "A" = "#FFD045",
+      "I" = "#56C0BC",
+      "M" = "red"
+    )
+  ) +
+  labs(
+    x = "Total feeding",
+    y = "Efficiency of Conversion Index (ECI)"
+  ) +
+  theme_classic(base_size = 10) +
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    plot.title = element_text(size = 22, hjust = 0.5),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 14),
+    text = element_text(family = "A")
+  ) +
+  xlim(500, 1000)+
+  ylim(1.6, 2.2)
+
+ECIf
+
+# Save
+filename <- "ECIf.svg"
+ggsave(filename, plot = ECIf, device = "svg", width = 6, height = 4)
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+
+
+
+```{r}
+# install.packages("emmeans")
+library(emmeans)
+
+slopes <- emtrends(f6, ~ ALAN * Cooper, var = "food_total")
+slopes
+
+```
+
+
+
+###_____MALES
+###box effect
+
+same response variable as for RGR, thus, no additional check here. 
+
+```{r}
+ECI_m <- glmmTMB(delta_lp ~ food_total+ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_m, 
+                    na.action = na.omit, REML = FALSE)
+
+```
+
+
+```{r}
+m6 <- ECI_m
+```
+
+
+```{r}
+Dharma_m6 <- simulateResiduals(m6, n = 1000, plot = "quantile")
+plot (Dharma_m6)
+
+testDispersion(Dharma_m6)
+testZeroInflation(Dharma_m6)
+
+r <- residuals(m6, type = "pearson")
+hist(r)
+
+check_collinearity(m6)
+check_residuals(m6)
+```
+###results
+
+```{r}
+print(summary(m6))
+print(Anova(m6))
+```
+####post-hoc: Tukey HSD
+
+```{r}
+# Calculate the estimated marginal means
+emm_model <- emmeans(m6, ~ treatment, adjust = "holm")
+
+# Conduct pairwise comparisons
+pairwise_results <- pairs(emm_model)
+
+# Summary of pairwise comparisons
+summary(pairwise_results)
+
+```
+
+```{r}
+# Generate new data for prediction
+new_data <- expand.grid(
+  food_total = seq(min(all_m$food_total, na.rm = TRUE),
+                   max(all_m$food_total, na.rm = TRUE),
+                   length.out = 100),
+  treatment = c("C", "A", "I", "M")
+)
+
+# Get predicted values from model
+new_data$predicted <- predict(ECI_m, newdata = new_data)
+
+# Plot
+ggplot(new_data, aes(x = food_total, y = predicted, color = treatment)) +
+  geom_line(size = 1) +
+  geom_point(data = all_m, aes(x = food_total, y = delta_lp, color = treatment), 
+             alpha = 0.4, inherit.aes = FALSE) +
+  labs(x = "Food Total", y = "Predicted delta_lp", color = "Treatment") +
+  theme_minimal()
+
+
+```
+
+
+
+##--F0 RCR 
+###_____FEMALES
+###box effect
+
+no indication for a box effect here. Thus, no bubble plot and anova comparison of models with and without box effect.
+
+```{r}
+box_effect_RCR_f <- glmmTMB(food_total ~ box_nr, family = gaussian, data = all_f)
+Anova(box_effect_RCR_f)
+```
+The levene test for homogeneity of variance was significant, so I modelled the heteroscedasticity explicitly by implementing the dispformula thereby indicating that the variance differs between treatments. Also, I log transformed the response variable and added +1. This fixed the levene problem and this not decrease model fit as diagnosted by DHARMa.
+
+```{r}
+RCR_f <- glmmTMB(log(food_total) ~ mass_l+ALAN*Cooper, 
+                  dispformula = ~ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_f, 
+                    na.action = na.omit)
+```
+
+
+
+
+```{r}
+f7 <- RCR_f
+```
+
+
+```{r}
+Dharma_f7 <- simulateResiduals(f7, n = 1000, plot = "quantile")
+plot (Dharma_f7)
+
+testDispersion(Dharma_f7)
+testZeroInflation(Dharma_f7)
+
+r <- residuals(f7, type = "pearson")
+hist(r)
+
+check_collinearity(f7)
+check_residuals(f7)
+```
+###results
+
+```{r}
+print(summary(f7))
+print(Anova(f7))
+```
+
+
+```{r}
+# Get treatment levels
+treatments <- unique(all_f$treatment)
+
+# Initialize list to collect predictions per treatment
+prediction_list <- list()
+
+# Loop over treatments and generate predictions within observed mass_l range
+for (t in treatments) {
+  
+  # Subset data for current treatment group
+  group_data <- all_f %>% filter(treatment == t)
+  
+  # Only proceed if we have variation in mass_l
+  if (length(unique(group_data$mass_l)) > 1) {
+    
+    mass_seq <- seq(min(group_data$mass_l, na.rm = TRUE),
+                    max(group_data$mass_l, na.rm = TRUE),
+                    length.out = 100)
+    
+    new_df <- data.frame(
+      mass_l = mass_seq,
+      treatment = t
+    )
+    
+    new_df$pred_log_food <- predict(RCR_f, newdata = new_df, type = "link")
+    new_df$pred_food <- exp(new_df$pred_log_food)
+    
+    prediction_list[[t]] <- new_df
+  }
+}
+
+# Combine all treatment-specific predictions
+prediction_data <- do.call(rbind, prediction_list)
+
+# Optional: colors and shapes
+colors <- c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "green")
+shapes <- c("C" = 16, "A" = 17, "I" = 18, "M" = 15)
+
+# Plot
+ggplot() +
+  geom_line(data = prediction_data,
+            aes(x = mass_l, y = pred_food, color = treatment), size = 1) +
+  
+  geom_point(data = all_f,
+             aes(x = mass_l, y = food_total, color = treatment, shape = treatment),
+             alpha = 0.6, size = 2) +
+  
+  scale_color_manual(values = colors) +
+  scale_shape_manual(values = shapes) +
+  
+  labs(x = "Female body mass (mg)",
+       y = "Consumed leaf material (mg)",
+       color = "Treatment", shape = "Treatment") +
+  theme_minimal()
+
+```
+
+
+
+
+####post-hoc: Tukey HSD
+
+```{r}
+# Calculate the estimated marginal means
+emm_model <- emmeans(f7, ~ ALAN*Cooper, adjust = "holm")
+
+# Conduct pairwise comparisons
+pairwise_results <- pairs(emm_model)
+
+# Summary of pairwise comparisons
+summary(pairwise_results)
+
+```
+###_____MALES
+###box effect
+
+no indication for a box effect here. Thus, no bubble plot and anova comparison of models with and without box effect.
+
+```{r}
+box_effect_RCR_m <- glmmTMB(food_total ~ box_nr, family = gaussian, data = all_m)
+Anova(box_effect_RCR_m)
+```
+The levene test for homogeneity of variance was significant, so I modelled the heteroscedasticity explicitly by implementing the dispformula thereby indicating that the variance differs between treatments. Also, I log transformed the response variable and added +1. This fixed the levene problem and this not decrease model fit as diagnosted by DHARMa.
+
+```{r}
+RCR_m <- glmmTMB(food_total ~ mass_l+ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_m, 
+                    na.action = na.omit)
+```
+
+
+
+
+```{r}
+m7 <- RCR_m
+```
+
+
+```{r}
+Dharma_m7 <- simulateResiduals(m7, n = 1000, plot = "quantile")
+plot (Dharma_m7)
+
+testDispersion(Dharma_m7)
+testZeroInflation(Dharma_m7)
+
+r <- residuals(m7, type = "pearson")
+hist(r)
+
+check_collinearity(m7)
+check_residuals(m7)
+```
+###results
+
+```{r}
+print(summary(m7))
+print(Anova(m7))
+```
+```{r}
+# Get treatment levels
+treatments <- unique(all_m$treatment)
+
+# Initialize list to collect predictions per treatment
+prediction_list <- list()
+
+# Loop over treatments and generate predictions within observed mass_l range
+for (t in treatments) {
+  
+  # Subset data for current treatment group
+  group_data <- all_m %>% filter(treatment == t)
+  
+  # Only proceed if we have variation in mass_l
+  if (length(unique(group_data$mass_l)) > 1) {
+    
+    mass_seq <- seq(min(group_data$mass_l, na.rm = TRUE),
+                    max(group_data$mass_l, na.rm = TRUE),
+                    length.out = 100)
+    
+    new_df <- data.frame(
+      mass_l = mass_seq,
+      treatment = t
+    )
+    
+    new_df$pred_log_food <- predict(RCR_f, newdata = new_df, type = "link")
+    new_df$pred_food <- exp(new_df$pred_log_food)
+    
+    prediction_list[[t]] <- new_df
+  }
+}
+
+# Combine all treatment-specific predictions
+prediction_data <- do.call(rbind, prediction_list)
+
+# Optional: colors and shapes
+colors <- c("C" = "black", "A" = "#F8766D", "I" = "#00BA38", "M" = "#619CFF")
+shapes <- c("C" = 16, "A" = 17, "I" = 18, "M" = 15)
+
+# Plot
+ggplot() +
+  geom_line(data = prediction_data,
+            aes(x = mass_l, y = pred_food, color = treatment), size = 1) +
+  
+  geom_point(data = all_m,
+             aes(x = mass_l, y = food_total, color = treatment, shape = treatment),
+             alpha = 0.6, size = 2) +
+  
+  scale_color_manual(values = colors) +
+  scale_shape_manual(values = shapes) +
+  
+  labs(x = "Male body mass (mg)",
+       y = "Consumed leaf material (mg)",
+       color = "Treatment", shape = "Treatment") +
+  theme_minimal()
+
+```
+
+
+

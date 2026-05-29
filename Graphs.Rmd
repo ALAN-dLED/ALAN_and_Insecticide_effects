@@ -1,0 +1,1774 @@
+# packages
+
+```{r}
+library(readxl)
+library(sandwich)
+library(car)
+library(carData)
+library(sp)
+library(emmeans)
+library(Matrix)
+library(lme4)
+library(DHARMa)
+library(nlme)
+library(glmmTMB)
+library(ggplot2)
+library(gstat)
+library(ggpattern)
+library(ggpubr)
+library(ggthemes)
+library(ggnewscale)
+library(ggsignif)
+library(multcomp)
+library(multcompView)
+library(emmeans)
+library(AER)
+library(MASS)
+library(jtools)
+library(interactions)
+library(performance)
+library(see)
+library(nlme)
+library(sjPlot)
+library(tidyverse)
+library(broom.mixed)
+library(dplyr)
+library(vegan)
+library(survival)
+library(survminer)
+```
+
+# data in
+
+```{r}
+all <- read_excel("C:/Master.xlsx", 
+    na = "na")
+#View(all)
+```
+
+
+# subsets
+```{r}
+all_pairs <- subset (all, sex == "f" & pair_ID != "na")
+all_f <- subset (all, sex == "f")
+all_m <- subset (all, sex == "m")
+all_dev <- subset (all, a == "1")
+```
+
+
+
+#reorder levels and define data type
+```{r}
+all <- all %>%
+  mutate(treatment = factor(treatment, levels = c("C", "A", "I", "M")))
+
+all_f <- all_f %>%
+  mutate(treatment = factor(treatment, levels = c("C", "A", "I", "M")))
+
+all_m <- all_m %>%
+  mutate(treatment = factor(treatment, levels = c("C", "A", "I", "M")))
+
+all_pairs <- all_pairs %>%
+  mutate(treatment = factor(treatment, levels = c("C", "A", "I", "M")))
+```
+
+
+
+# font
+
+```{r}
+windowsFonts(A = windowsFont("Arial"))
+windowsFonts(B = windowsFont("Time News Roman"))
+```
+
+
+
+#boxplots and scatterplots
+
+
+##Fig. 2A_F0 DEVELOPMENTAL TIME MF
+
+```{r}
+
+# Clean your data
+all_clean <- all %>% drop_na(devtime_adult)
+
+
+# Create base plot
+devtime_adult_mf <- ggplot(all_clean, aes(x = treatment, y = devtime_adult)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 3, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Developmental time [days]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )
+
+
+# Show the plot
+devtime_adult_mf
+
+# Save the plot
+filename <- "devtime_adult_mf.svg"
+ggsave(filename, plot = devtime_adult_mf, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+```{r}
+# Clean your data
+all_clean <- all %>% drop_na(devtime_adult)
+
+
+# --- Plot ---
+devtime_adult_mf <- ggplot(all_clean, aes(x = treatment, y = devtime_adult)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", 
+               "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  geom_jitter(aes(shape = sex_plots, fill = sex_plots), 
+              width = 0.3, height = 0.00, size = 2, color = "white") +
+  scale_shape_manual(
+    name = "Sex",
+    values = c("f" = 22, "m" = 21, "n" = 24),
+    labels = c("f" = "female", "m" = "male", "n" = "unknown")) +
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Developmental time [d]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")) +
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )
+
+
+# Show the plot
+devtime_adult_mf
+
+# Save the plot
+filename <- "devtime_adult_mf.svg"
+ggsave(filename, plot = devtime_adult_mf, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. 2B_F0 ADULT MASS MALE
+
+```{r}
+# Clean your data
+all_m_clean <- all_m %>% drop_na(mass_a)
+
+
+# Create base plot
+mass_a_m <- ggplot(all_m_clean, aes(x = treatment, y = mass_a)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Male adult mass [mg]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )+
+  ylim(4.5, 10.5)
+
+
+# Show the plot
+mass_a_m
+
+# Save the plot
+filename <- "mass_a_m.svg"
+ggsave(filename, plot = mass_a_m, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+##Fig. 2C_F0 ADULT MASS FEMALE
+
+```{r}
+
+# Clean your data
+all_f_clean <- all_f %>% drop_na(mass_a)
+
+# Fit model
+f1 <- glmmTMB(mass_a ~ ALAN*Cooper, 
+                    family = gaussian, 
+                    data = all_f_clean, 
+                    na.action = na.omit, REML = FALSE)
+
+# Estimated marginal means and pairwise comparisons (Holm)
+em <- emmeans(f1, pairwise ~ ALAN*Cooper, adjust = "holm")
+
+# CLD
+cld_letters <- cld(em$emmeans, Letters = letters, adjust = "holm") %>%
+  as.data.frame() %>%
+  rename(Letters = .group) %>%
+  mutate(
+    treatment = case_when(
+      ALAN == 0 & Cooper == 0 ~ "C",
+      ALAN == 1 & Cooper == 0 ~ "A",
+      ALAN == 0 & Cooper == 1 ~ "I",
+      ALAN == 1 & Cooper == 1 ~ "M"
+    )
+  )
+
+# Remove whitespace
+cld_letters$Letters <- trimws(cld_letters$Letters)
+
+
+# Get max mass for y-positioning
+max_vals <- all_f_clean %>%
+  group_by(treatment) %>%
+  summarise(max_mass = max(mass_a), .groups = "drop")
+
+# Merge letter labels and max values
+cld_letters <- left_join(cld_letters, max_vals, by = "treatment")
+
+# Create base plot
+mass_a_f <- ggplot(all_f_clean, aes(x = treatment, y = mass_a)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Female adult mass [mg]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )+
+  ylim(4.5, 10.5)
+
+# Add CLD letters or "n.s." depending on significance
+if (length(unique(cld_letters$Letters)) == 1) {
+  # All treatments have the same letter → no significant difference
+  center_x <- mean(range(as.numeric(factor(cld_letters$treatment))))
+  max_y <- max(cld_letters$max_mass) + 0.05 * max(all_f_clean$mass_a)
+  
+  mass_a_f <- mass_a_f +
+    annotate("text", x = center_x, y = max_y, label = "n.s.", size = 5)
+  
+} else {
+  # Show CLD letters per treatment
+  mass_a_f <- mass_a_f +
+    geom_text(data = cld_letters,
+              aes(x = treatment, y = max_mass + 0.05 * max(all_f_clean$mass_a), label = Letters),
+              inherit.aes = FALSE,
+              size = 5)
+}
+
+# Show the plot
+mass_a_f
+
+# Save the plot
+filename <- "mass_a_f.svg"
+ggsave(filename, plot = mass_a_f, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. 2D_KAPLAN-MEIER SURVIVAL
+
+```{r}
+(survival <- Surv(all$time_days, all$status==1, type="right"))
+#(survivalpre <- Surv(survpre$Time_days, survpre$Status==1, type="right"))
+```
+
+```{r}
+surv_curve <- survfit(Surv(time_days, status==1)~treatment, data=all, type='kaplan-meier')
+
+```
+
+```{r}
+# Extract data from survfit()
+surv_df <- surv_summary(surv_curve, data = all)
+
+# split data in groups
+surv_C <- surv_df %>% filter(strata == "treatment=C")
+surv_A <- surv_df %>% filter(strata == "treatment=A")
+surv_I <- surv_df %>% filter(strata == "treatment=I")
+surv_M <- surv_df %>% filter(strata == "treatment=M")
+
+# extract censoring per group
+censor_C <- surv_C %>% filter(!is.na(n.censor) & n.censor > 0)
+censor_A <- surv_A %>% filter(!is.na(n.censor) & n.censor > 0)
+censor_I <- surv_I %>% filter(!is.na(n.censor) & n.censor > 0)
+censor_M <- surv_M %>% filter(!is.na(n.censor) & n.censor > 0)
+
+# base plot
+p <- ggplot() +
+  # group C 
+  geom_step(data = surv_C, aes(x = time, y = surv), color = "#555352", linetype = "solid", size = 1.1) +
+  
+  # group A 
+  geom_step(data = surv_A, aes(x = time, y = surv), color = "#FFD045", linetype = "solid", size = 1.1) +
+  
+  # group I 
+  geom_step(data = surv_I, aes(x = time, y = surv), color = "#56C0BC", linetype = "solid", size = 1.1) +
+
+  # group M 
+  geom_step(data = surv_M, aes(x = time, y = surv), color = "#56C0BC", linetype = "solid", size = 1.1) +
+
+  # group M 
+  geom_step(data = surv_M, aes(x = time, y = surv), color = "#FFD045", linetype = "dashed", size = 1.1) +
+
+  # censoring details
+  geom_point(data = censor_C, aes(x = time, y = surv), shape = 1, size = 4, stroke = 1, color = "#555352") +
+  geom_point(data = censor_A, aes(x = time, y = surv), shape = 1, size = 4, stroke = 1, color = "#FFD045") +
+  geom_point(data = censor_I, aes(x = time, y = surv), shape = 1, size = 4, stroke = 1, color = "#56C0BC") +
+  geom_point(data = censor_M, aes(x = time, y = surv), shape = 1, size = 4, stroke = 1, color = "#56C0BC") +
+
+  # axes and layout
+  labs(x = "Time [d]", y = "Survival prob. [rel.]") +
+  scale_x_continuous(limits = c(0, 32)) +
+  scale_y_continuous(limits = c(0.0, 1.0)) +
+  theme_classic(base_size = 10) +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        text = element_text(family = "A"))
+
+# safe
+ggsave("survival_plot_M_doubled_with_censorings.svg", plot = p, width = 6, height = 4, device = "svg")
+
+# show
+print(p)
+
+```
+
+
+##Fig. 3A_F0 CONSUMPTION PRE I. MALE
+
+```{r}
+
+# Clean your data
+all_m_clean <- all_m %>% drop_na(sum_pre)
+
+# Create base plot
+sum_pre_m <- ggplot(all_m_clean, aes(x = treatment, y = sum_pre)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Feeding amount [mm^2]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )
+
+
+# Show the plot
+sum_pre_m
+
+# Save the plot
+filename <- "sum_pre_m.svg"
+ggsave(filename, plot = sum_pre_m, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+
+##Fig. 3B_F0 CONSUMPTION PRE I. FEMALE
+
+```{r}
+
+# Clean your data
+all_f_clean <- all_f %>% drop_na(sum_pre)
+
+
+# Create base plot
+sum_pre_f <- ggplot(all_f_clean, aes(x = treatment, y = sum_pre)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Feeding amount [mm^2]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )+
+  scale_y_continuous(
+  breaks = seq(50, 200, 50),
+  limits = c(0, 205),
+  expand = expansion(mult = c(0, 0.05))
+)
+
+
+# Show the plot
+sum_pre_f
+
+# Save the plot
+filename <- "sum_pre_f.svg"
+ggsave(filename, plot = sum_pre_f, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+```{r}
+## ------------------------------
+##  CLEAN DATA
+## ------------------------------
+
+all_f_clean <- all_f %>% drop_na(sum_pre)
+
+
+## ------------------------------
+##  PLOT: Feeding amount (mm²)
+## ------------------------------
+
+sum_pre_f <- ggplot(all_f_clean, aes(x = treatment, y = sum_pre)) +
+  stat_boxplot(geom = "errorbar", width = 0.2) +
+  
+  # Boxplots with patterns
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment,
+        pattern = treatment_format,
+        pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+  ) +
+  
+  # Patterns legend
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  
+  # Colors legend
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352",
+               "A" = "#FFD045",
+               "I" = "#56C0BC",
+               "M" = "#FFD045",
+               "f" = "black",
+               "m" = "black",
+               "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  
+  # Jittered points (sex shapes)
+  geom_jitter(aes(shape = sex_plots, fill = sex_plots),
+              width = 0.3, height = 0, size = 2, color = "white") +
+  scale_shape_manual(
+    name = "Sex",
+    values = c("f" = 22, "m" = 21, "n" = 24),
+    labels = c("f" = "female", "m" = "male", "n" = "unknown")
+  ) +
+  
+  # Mean marker (grey X)
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +
+  
+  # Axis and labels
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Feeding amount [mm^2]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")) +
+  
+  # Standardize Y axis for comparability across plots
+  scale_y_continuous(limits = c(0, 200),
+                     breaks = seq(50, 200, 50)) +
+  
+  # Theme
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )
+
+# Show the plot
+sum_pre_f
+
+# Save the plot
+filename <- "sum_pre_f.svg"
+ggsave(filename, plot = sum_pre_f, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+
+
+##Fig. 3C_F0 CONSUMPTION DURING I. MALE
+
+```{r}
+
+# Clean your data
+all_m_clean <- all_m %>% drop_na(sum_per)
+
+
+# Create base plot
+sum_per_m <- ggplot(all_m_clean, aes(x = treatment, y = sum_per)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Feeding amount [mm^2]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )
+
+# Show the plot
+sum_per_m
+
+# Save the plot
+filename <- "sum_per_m.svg"
+ggsave(filename, plot = sum_per_m, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. 3D_F0 CONSUMPTION DURING I. FEMALE
+
+```{r}
+
+# Clean your data
+all_f_clean <- all_f %>% drop_na(sum_per)
+
+# Merge letter labels and max values
+cld_letters <- left_join(cld_letters, max_vals, by = "treatment")
+
+# Create base plot
+sum_per_f <- ggplot(all_f_clean, aes(x = treatment, y = sum_per)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Feeding amount [mm^2]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )
+
+# Show the plot
+sum_per_f
+
+# Save the plot
+filename <- "sum_per_f.svg"
+ggsave(filename, plot = sum_per_f, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. 3E_F0 CONSUMPTION POST I. MALE
+
+```{r}
+
+# Clean your data
+all_m_clean <- all_m %>% drop_na(sum_post)
+
+# Create base plot
+sum_post_m <- ggplot(all_m_clean, aes(x = treatment, y = sum_post)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Feeding amount [mm^2]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )+
+  ylim(0, 650)
+
+# Show the plot
+sum_post_m
+
+# Save the plot
+filename <- "sum_post_m.svg"
+ggsave(filename, plot = sum_post_m, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. 3F_F0 CONSUMPTION POST I. FEMALE
+
+```{r}
+
+# Clean your data
+all_f_clean <- all_f %>% drop_na(sum_post)
+
+# Create base plot
+sum_post_f <- ggplot(all_f_clean, aes(x = treatment, y = sum_post)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Feeding amount [mm^2]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )+
+  ylim(0, 650)
+
+# Show the plot
+sum_post_f
+
+# Save the plot
+filename <- "sum_post_f.svg"
+ggsave(filename, plot = sum_post_f, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+
+
+
+
+
+##Fig. 4A_F0 MATING DELAY PAIRS
+
+```{r}
+
+# Clean your data
+all_pairs_clean <- all_pairs %>% drop_na(min_until_mating)
+
+# Create base plot
+min_until_mating_mf <- ggplot(all_pairs_clean, aes(x = treatment, y = min_until_mating)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 24, "m" = 24, "n" = 20),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Time until mating [min]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )
+
+# Show the plot
+min_until_mating_mf
+
+# Save the plot
+filename <- "min_until_mating_mf.svg"
+ggsave(filename, plot = min_until_mating_mf, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. 4B_F1 EGG  NO. 
+
+```{r}
+
+# Clean your data
+all_pairs_clean <- all_pairs %>% drop_na(egg_no._corrected)
+
+# Create base plot
+egg_no._corrected_mf <- ggplot(all_pairs_clean, aes(x = treatment, y = egg_no._corrected)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 24, "m" = 24, "n" = 20),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Egg number") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )
+
+
+# Show the plot
+egg_no._corrected_mf
+
+# Save the plot
+filename <- "egg_no._corrected_mf.svg"
+ggsave(filename, plot = egg_no._corrected_mf, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. 4C_F1 HATCHING RATE
+```{r}
+
+# Clean your data
+all_pairs_clean <- all_pairs %>% drop_na(hatching_rate)
+
+# Create base plot
+hatching_rate_mf <- ggplot(all_pairs_clean, aes(x = treatment, y = hatching_rate)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 24, "m" = 24, "n" = 20),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Hatching rate [%]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )
+
+
+# Show the plot
+hatching_rate_mf
+
+# Save the plot
+filename <- "hatching_rate_mf.svg"
+ggsave(filename, plot = hatching_rate_mf, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. S1A_F0 LARVAL MASS MF
+
+```{r}
+
+# Clean your data
+all_clean <- all %>% drop_na(mass_l)
+
+# Fit model
+model <- lm(mass_l ~ treatment, data = all_clean)
+
+# Estimated marginal means and pairwise comparisons (Holm)
+em <- emmeans(model, pairwise ~ treatment, adjust = "holm")
+
+# Get Compact Letter Display with actual letters (not numbers!)
+cld_letters <- cld(em$emmeans, Letters = letters, adjust = "holm") %>%
+  as.data.frame() %>%
+  rename(Letters = .group)
+
+# Remove leading/trailing whitespace from letters (important!)
+cld_letters$Letters <- trimws(cld_letters$Letters)
+
+# Get max mass for y-positioning
+max_vals <- all_clean %>%
+  group_by(treatment) %>%
+  summarise(max_mass = max(mass_l), .groups = "drop")
+
+# Merge letter labels and max values
+cld_letters <- left_join(cld_letters, max_vals, by = "treatment")
+
+# Create base plot
+massl_mf <- ggplot(all_clean, aes(x = treatment, y = mass_l)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Larval mass [mg]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )
+
+# Add CLD letters or "n.s." depending on significance
+if (length(unique(cld_letters$Letters)) == 1) {
+  # All treatments have the same letter → no significant difference
+  center_x <- mean(range(as.numeric(factor(cld_letters$treatment))))
+  max_y <- max(cld_letters$max_mass) + 0.05 * max(all_clean$mass_l)
+  
+  massl_mf <- massl_mf +
+    annotate("text", x = center_x, y = max_y, label = "n.s.", size = 5)
+  
+} else {
+  # Show CLD letters per treatment
+  massl_mf <- massl_mf +
+    geom_text(data = cld_letters,
+              aes(x = treatment, y = max_mass + 0.05 * max(all_clean$mass_l), label = Letters),
+              inherit.aes = FALSE,
+              size = 5)
+}
+
+# Show the plot
+massl_mf
+
+# Save the plot
+filename <- "massl_mf.svg"
+ggsave(filename, plot = massl_mf, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+
+
+##Fig. S1B_F0 DELTA PUPAL-LARVAL MASS MALE
+
+```{r}
+
+# Clean your data
+all_m_clean <- all_m %>% drop_na(delta_lp)
+
+# Create base plot
+delta_lp_m <- ggplot(all_m_clean, aes(x = treatment, y = delta_lp)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Male delta pupal-larval mass [mg]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )+
+  ylim(4.5, 9.5)
+
+
+# Show the plot
+delta_lp_m
+
+# Save the plot
+filename <- "delta_lp_m.svg"
+ggsave(filename, plot = delta_lp_m, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. S1C_F0 DELTA PUPAL-LARVAL MASS FEMALE
+
+```{r}
+
+# Clean your data
+all_f_clean <- all_f %>% drop_na(delta_lp)
+
+# Create base plot
+delta_lp_f <- ggplot(all_f_clean, aes(x = treatment, y = delta_lp)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Female delta pupal-larval mass [mg]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )+
+  ylim(4.5, 9.5)
+
+
+# Show the plot
+delta_lp_f
+
+# Save the plot
+filename <- "delta_lp_f.svg"
+ggsave(filename, plot = delta_lp_f, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+##Fig. S1D_F0 DELTA PUPAL-LARVAL MASS x TOTAL CONSUMPTION MALE
+
+```{r}
+# Prepare data
+all_m_clean <- all_m %>%
+  mutate(
+    treatment = case_when(
+      ALAN == 0 & Cooper == 0 ~ "C",
+      ALAN == 1 & Cooper == 0 ~ "A",
+      ALAN == 0 & Cooper == 1 ~ "I",
+      ALAN == 1 & Cooper == 1 ~ "M",
+      TRUE ~ NA_character_
+    ),
+    treatment = factor(treatment, levels = c("C", "A", "I", "M"))
+  ) %>%
+  filter(!is.na(food_total), !is.na(delta_lp), is.finite(food_total), delta_lp > 0)
+
+# Plot
+resultam <- ggplot(all_m_clean, aes(x = food_total, y = log(delta_lp),
+                        color = treatment, linetype = treatment)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1.2) +
+  scale_color_manual(
+    name = "Treatment",
+    values = c(
+      "C" = "#555352",  # Control (gray)
+      "A" = "#FFD045",  # ALAN (yellow)
+      "I" = "#56C0BC",  # Insecticide (blue)
+      "M" = "red"   # Mix (yellow)
+    ),
+    labels = c("C" = "Control", "A" = "ALAN",
+               "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_linetype_manual(
+    name = "Treatment",
+    values = c(
+      "C" = "solid",
+      "A" = "solid",
+      "I" = "solid",
+      "M" = "dashed"
+    ),
+    labels = c("C" = "Control", "A" = "ALAN",
+               "I" = "Insecticide", "M" = "Mix")
+  ) +
+  labs(
+    x = "Total feeding amount [mm^2]",
+    y = "Delta mass [mg]"
+  ) +
+  theme_classic(base_size = 10) +
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    plot.title = element_text(size = 22, hjust = 0.5),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 14),
+    text = element_text(family = "A")
+  ) +
+xlim(500, 1000)+
+  ylim(1.6, 2.2)
+
+resultam
+
+# Save the plot
+filename <- "resultam.svg"
+ggsave(filename, plot = resultam, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+
+##Fig. S1E_F0 DELTA PUPAL-LARVAL MASS x TOTAL CONSUMPTION FEMALE
+
+```{r}
+# Prepare data
+all_f_clean <- all_f %>%
+  mutate(
+    treatment = case_when(
+      ALAN == 0 & Cooper == 0 ~ "C",
+      ALAN == 1 & Cooper == 0 ~ "A",
+      ALAN == 0 & Cooper == 1 ~ "I",
+      ALAN == 1 & Cooper == 1 ~ "M",
+      TRUE ~ NA_character_
+    ),
+    treatment = factor(treatment, levels = c("C", "A", "I", "M"))
+  ) %>%
+  filter(!is.na(food_total), !is.na(delta_lp), is.finite(food_total), delta_lp > 0)
+
+# Plot
+resulta <- ggplot(all_f_clean, aes(x = food_total, y = log(delta_lp),
+                        color = treatment, linetype = treatment)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1.2) +
+  scale_color_manual(
+    name = "Treatment",
+    values = c(
+      "C" = "#555352",  # Control (gray)
+      "A" = "#FFD045",  # ALAN (yellow)
+      "I" = "#56C0BC",  # Insecticide (blue)
+      "M" = "red"   # Mix (yellow)
+    ),
+    labels = c("C" = "Control", "A" = "ALAN",
+               "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_linetype_manual(
+    name = "Treatment",
+    values = c(
+      "C" = "solid",
+      "A" = "solid",
+      "I" = "solid",
+      "M" = "dashed"
+    ),
+    labels = c("C" = "Control", "A" = "ALAN",
+               "I" = "Insecticide", "M" = "Mix")
+  ) +
+  labs(
+    x = "Total feeding amount [mm^2]",
+    y = "Delta mass [mg]"
+  ) +
+  theme_classic(base_size = 10) +
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    plot.title = element_text(size = 22, hjust = 0.5),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 14),
+    text = element_text(family = "A")
+  )+
+  xlim(500, 1000)+
+  ylim(1.6, 2.2)
+
+resulta
+
+# Save the plot
+filename <- "resulta.svg"
+ggsave(filename, plot = resulta, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. S2A_F0 TOTAL CONSUMPTION MALE
+
+```{r}
+
+# Clean your data
+all_m_clean <- all_m %>% drop_na(food_total)
+
+
+# Create base plot
+food_total_m <- ggplot(all_m_clean, aes(x = treatment, y = food_total)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Male total consumption [mm^2]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )+
+  ylim(450, 1200)
+
+# Show the plot
+food_total_m
+
+# Save the plot
+filename <- "food_total_m.svg"
+ggsave(filename, plot = food_total_m, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. S2B_F0 TOTAL CONSUMPTION FEMALE
+
+```{r}
+
+# Clean your data
+all_f_clean <- all_f %>% drop_na(food_total)
+
+# Create base plot
+food_total_f <- ggplot(all_f_clean, aes(x = treatment, y = food_total)) +
+  stat_boxplot(geom ="errorbar", width = 0.2) +
+  geom_boxplot_pattern(
+    outlier.shape = NA,
+    aes(fill = treatment, pattern = treatment_format, pattern_colour = treatment_format),
+    pattern_density = 0.45,
+    pattern = c("none", "none", "none", "stripe")
+
+  ) +
+  scale_pattern_colour_manual(values = c("none" = NA, "stripe" = "#56C0BC")) +
+  scale_pattern_manual(
+    name = "Treatment",
+    values = c("C" = "none", "A" = "none", "I" = "none", "M" = "stripe"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+  scale_fill_manual(
+    name = "Treatment",
+    values = c("C" = "#555352", "A" = "#FFD045", "I" = "#56C0BC", "M" = "#FFD045", "f" = "black", "m" = "black", "n" = "gray"),
+    labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix")
+  ) +
+ geom_jitter(aes(shape = sex_plots, fill = sex_plots), width = 0.3, height = 0.00, size = 2, color = "white") +
+scale_shape_manual(
+  name = "Sex",
+  values = c("f" = 22, "m" = 21, "n" = 24),
+  labels = c("f" = "female", "m" = "male", "n" = "unknown"))+
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    shape = 4,
+    size = 3,
+    color = "#8F8F8F",
+    stroke = 2
+  ) +  # mean above
+  theme_classic(base_size = 10) +
+  labs(x = element_blank(), y = "Female total consumption [mm^2]") +
+  scale_x_discrete(labels = c("C" = "Control", "A" = "ALAN", "I" = "Insecticide", "M" = "Mix"))+
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    text = element_text(family = "A")
+  )+
+  ylim(450, 1200)
+
+# Show the plot
+food_total_f
+
+# Save the plot
+filename <- "food_total_f.svg"
+ggsave(filename, plot = food_total_f, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+##Fig. S2C_F0 TOTAL CONSUMPTION x LARVAL MASS MALE
+
+```{r}
+# Prepare data
+all_m_clean <- all_m %>%
+  mutate(
+    treatment = case_when(
+      ALAN == 0 & Cooper == 0 ~ "C",
+      ALAN == 1 & Cooper == 0 ~ "A",
+      ALAN == 0 & Cooper == 1 ~ "I",
+      ALAN == 1 & Cooper == 1 ~ "M",
+      TRUE ~ NA_character_
+    ),
+    treatment = factor(treatment, levels = c("C", "A", "I", "M"))
+  ) %>%
+  filter(!is.na(mass_l), !is.na(food_total), is.finite(mass_l), is.finite(food_total))
+
+# Plot
+RCRm<- ggplot(all_m_clean, aes(x = mass_l, y = food_total,
+                        color = treatment, linetype = treatment)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1.2) +
+  scale_color_manual(
+    name = "Treatment",
+    values = c(
+      "C" = "#555352",  # Control (gray)
+      "A" = "#FFD045",  # ALAN (yellow)
+      "I" = "#56C0BC",  # Insecticide (blue)
+      "M" = "red"   # Mix (yellow)
+    ),
+    labels = c(
+      "C" = "Control",
+      "A" = "ALAN",
+      "I" = "Insecticide",
+      "M" = "Mix"
+    )
+  ) +
+  scale_linetype_manual(
+    name = "Treatment",
+    values = c(
+      "C" = "solid",
+      "A" = "solid",
+      "I" = "solid",
+      "M" = "dashed"
+    ),
+    labels = c(
+      "C" = "Control",
+      "A" = "ALAN",
+      "I" = "Insecticide",
+      "M" = "Mix"
+    )
+  ) +
+  labs(
+    x = "Larval mass [mg]",
+    y = "Total feeding amount [mm^2]",
+    title = "Relationship between early larval mass and RCR"
+  ) +
+  theme_classic(base_size = 10) +
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    plot.title = element_text(size = 22, hjust = 0.5),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 14),
+    text = element_text(family = "A")
+  )+
+    ylim(500, 1200)+
+  xlim(0.25, 1.75)
+
+
+RCRm 
+
+
+# Save the plot
+filename <- "RCRm.svg"
+ggsave(filename, plot = RCRm, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+```
+
+##Fig. S2D_F0 TOTAL CONSUMPTION x LARVAL MASS FEMALE
+
+```{r}
+# Prepare data
+all_f_clean <- all_f %>%
+  mutate(
+    treatment = case_when(
+      ALAN == 0 & Cooper == 0 ~ "C",
+      ALAN == 1 & Cooper == 0 ~ "A",
+      ALAN == 0 & Cooper == 1 ~ "I",
+      ALAN == 1 & Cooper == 1 ~ "M",
+      TRUE ~ NA_character_
+    ),
+    treatment = factor(treatment, levels = c("C", "A", "I", "M"))
+  ) %>%
+  filter(!is.na(mass_l), !is.na(food_total), is.finite(mass_l), is.finite(food_total))
+
+# Plot
+RCRf <- ggplot(all_f_clean, aes(x = mass_l, y = food_total,
+                        color = treatment, linetype = treatment)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1.2) +
+  scale_color_manual(
+    name = "Treatment",
+    values = c(
+      "C" = "#555352",  # Control (gray)
+      "A" = "#FFD045",  # ALAN (yellow)
+      "I" = "#56C0BC",  # Insecticide (blue)
+      "M" = "red"   # Mix (yellow)
+    ),
+    labels = c(
+      "C" = "Control",
+      "A" = "ALAN",
+      "I" = "Insecticide",
+      "M" = "Mix"
+    )
+  ) +
+  scale_linetype_manual(
+    name = "Treatment",
+    values = c(
+      "C" = "solid",
+      "A" = "solid",
+      "I" = "solid",
+      "M" = "dashed"
+    ),
+    labels = c(
+      "C" = "Control",
+      "A" = "ALAN",
+      "I" = "Insecticide",
+      "M" = "Mix"
+    )
+  ) +
+  labs(
+    x = "Larval mass [mg]",
+    y = "Total feeding amount [mm^2]",
+    title = "Relationship between early larval mass and RCR"
+  ) +
+  theme_classic(base_size = 10) +
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20),
+    plot.title = element_text(size = 22, hjust = 0.5),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 14),
+    text = element_text(family = "A")
+  )+
+  ylim(500, 1200)+
+  xlim(0.25, 1.75)
+
+RCRf 
+
+
+# Save the plot
+filename <- "RCRf.svg"
+ggsave(filename, plot = RCRf, device = "svg", width = 6, height = 4)
+
+cat("Plot saved as", filename, "in the working directory.\n")
+
+```
+
+
